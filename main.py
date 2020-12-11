@@ -67,9 +67,9 @@ def _draw():
     for c in coins:
         p8.spr(c.sprite, c.x, c.y)
     p8.spr(1, pos[0], pos[1], 8, 8, flip)
-    p8.text(f"[MATTHIS]:", 8, 17, 2)
-    p8.text(f"[MATTHIS]:", 8, 16, 9)
-    p8.text(f"JE VEUX DES V BUCKS !", 8, 22, 7)
+    p8.text(f"[OLD MAN]:", 8, 17, 2)
+    p8.text(f"[OLD MAN]:", 8, 16, 9)
+    p8.text(f"IT'S DANGEROUS TO GO ALONE !", 8, 22, 7)
     p8.text(str(p8.time()), 8, 8)
 
 
