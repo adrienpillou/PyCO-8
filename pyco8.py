@@ -7,26 +7,15 @@
 # 1 sprite = 64 bytes
 # 256 sprites in a sheet
 # 8 flags per sprite => 1 byte =>256 bytes
+
 import os
 import sys
 import csv
 import random
+import math
 import pygame
-from pycomath import *
-import main
+import settings
 
-# Gamepad class used for controls
-class Gamepad():
-    def __init__(self):
-        self.up = False
-        self.down = False
-        self.right = False
-        self.left = False
-        self.o = False
-        self.x = False
-    
-    def debug(self):
-        print(f"UP:{self.up}\nDOWN:{self.down}\nRIGHT:{self.right}\nLEFT:{self.left}")
 
 # PICO-8 color palette
 palette = [
@@ -56,60 +45,60 @@ def add(t:list, v):
 # Check if a button is hold down
 def btn(i, p=0):
     if i == 'up':
-        if gamepad.up:
+        if settings.gamepad.up:
             return True
     if i == 'down':
-        if gamepad.down:
+        if settings.gamepad.down:
             return True
     if i == 'right':
-        if gamepad.right:
+        if settings.gamepad.right:
             return True
     if i == 'left':
-        if gamepad.left:
+        if settings.gamepad.left:
             return True
     if i == 'x':
-        if gamepad.x:
+        if settings.gamepad.x:
             return True
     if i == 'o':
-        if gamepad.o:
+        if settings.gamepad.o:
             return True
     return False
 
 # Check if a button is pressed
 def btnp(i, p=0):
     if i == 'up':
-        if gamepad.up:
-            gamepad.up = False
+        if settings.gamepad.up:
+            settings.gamepad.up = False
             return True
     if i == 'down':
-        if gamepad.down:
-            gamepad.down = False
+        if settings.gamepad.down:
+            settings.gamepad.down = False
             return True
     if i == 'right':
-        if gamepad.right:
-            gamepad.right = False
+        if settings.gamepad.right:
+            settings.gamepad.right = False
             return True
     if i == 'left':
-        if gamepad.left:
-            gamepad.left = False
+        if settings.gamepad.left:
+            settings.gamepad.left = False
             return True
     if i == 'x':
-        if gamepad.x:
-            gamepad.x = False
+        if settings.gamepad.x:
+            settings.gamepad.x = False
             return True
     if i == 'o':
-        if gamepad.o:
-            gamepad.o = False
+        if settings.gamepad.o:
+            settings.gamepad.o = False
             return True
     return False
 
 # Draw a circle
 def circ(x, y, r, col):
-    pygame.draw.circle(display, palette[col], (x, y), r, 1)
+    pygame.draw.circle(settings.display, palette[col], (x, y), r, 1)
 
 # Draw a filled circle shape
 def circfill(x, y, r, col):
-    pygame.draw.circle(display, palette[col], (x, y), r)
+    pygame.draw.circle(settings.display, palette[col], (x, y), r)
 
 # Clear the screen
 def cls(c = 0):
@@ -117,15 +106,15 @@ def cls(c = 0):
         c = 0
     elif c >= 15:
         c = 15
-    window.fill((0, 0, 0))
-    display.fill(palette[c])
+    settings.window.fill((0, 0, 0))
+    settings.display.fill(palette[c])
 
 # Get a flag state
 def fget(n, f=None):
     if f is None:
-        return flags[n]
+        return settings.flags[n]
     # Convert flag data to binary string
-    spr_flags = "{0:b}".format(flags[n]).zfill(8)
+    spr_flags = "{0:b}".format(settings.flags[n]).zfill(8)
     # Check flag state
     if spr_flags[7-f] == "1":
         return True
@@ -143,12 +132,12 @@ def fset(n, f=0, v=False):
     if n<0 or n>127:
         print("Sprite index out of bound !")
         return
-    spr_flags = "{0:b}".format(flags[n]).zfill(8)
+    spr_flags = "{0:b}".format(settings.flags[n]).zfill(8)
     flag_list = list(spr_flags)
     flag_list[7-f] = str(int(v)) # Set flag state to 1 or 0
     spr_flags = "".join(flag_list)
     dec = int(spr_flags, 2)
-    flags[n] = dec
+    settings.flags[n] = dec
     save_flags()
 
 # Load flag save file (framework only)
@@ -184,37 +173,36 @@ def load_sounds():
 def manage_input(event):
     if event.type == pygame.KEYDOWN:
         if event.key == pygame.K_UP:
-            gamepad.up = True
+            settings.gamepad.up = True
         if event.key == pygame.K_DOWN:
-            gamepad.down = True
+            settings.gamepad.down = True
         if event.key == pygame.K_RIGHT:
-            gamepad.right = True
+            settings.gamepad.right = True
         if event.key == pygame.K_LEFT:
-            gamepad.left = True
+            settings.gamepad.left = True
         if event.key == pygame.K_x:
-            gamepad.x = True
+            settings.gamepad.x = True
         if event.key == pygame.K_c:
-            gamepad.o = True
+            settings.gamepad.o = True
     elif event.type == pygame.KEYUP:
         if event.key == pygame.K_UP:
-            gamepad.up = False
+            settings.gamepad.up = False
         if event.key == pygame.K_DOWN:
-            gamepad.down = False
+            settings.gamepad.down = False
         if event.key == pygame.K_RIGHT:
-            gamepad.right = False
+            settings.gamepad.right = False
         if event.key == pygame.K_LEFT:
-            gamepad.left = False
+            settings.gamepad.left = False
         if event.key == pygame.K_x:
-            gamepad.x = False
+            settings.gamepad.x = False
         if event.key == pygame.K_c:
-            gamepad.o = False
+            settings.gamepad.o = False
 
 # Draw the map
 def map(celx=0, cely=0, sx=0, sy=0, celw=16, celh=16, layer=0):
-    global map_data
     # Load the map if it isn't done yet
-    if map_data is None:
-        map_data = load_map()
+    if settings.map_data is None:
+        settings.map_data = load_map()
     # Draw each cell of it using spr()
     # 4x2 screens (16x16 tiles per screen)
     # 128 wide x 32 high tiles
@@ -223,20 +211,28 @@ def map(celx=0, cely=0, sx=0, sy=0, celw=16, celh=16, layer=0):
     celh = mid(0, celw, 31)
     for j in range(celw):
         for i in range(celh):
-            spr(map_data[j][i], sx+i*8, sy+j*8)
+            spr(settings.map_data[j][i], sx+i*8, sy+j*8)
     pass
 
 # Get tile sprite index from the map
 def mget(x, y):
-    return map_data[y][x]
+    return settings.map_data[y][x]
+
+def mid(first, second, third):
+    if first < second:
+        return second
+    elif second > third:
+        return third
+    else:
+        return second
 
 # Set tile sprite index to the map
 def mset(x, y, v):
-    map_data[y][x] = v
+    settings.map_data[y][x] = v
 
 # Get the color of a pixel on the display
 def pget(x, y):
-    c = display.get_at((x,y))
+    c = settings.display.get_at((x,y))
     for i, p in enumerate(palette):
         if p == c:
             return i
@@ -244,16 +240,15 @@ def pget(x, y):
 
 # Set the color of a pixel on the display
 def pset(x, y, c):
-    display.set_at((x, y), palette[c])
+    settings.display.set_at((x, y), palette[c])
 
 # Draw a rect shape
 def rect(x0, y0, x1, y1, col):
-    pygame.draw.rect(display, palette[col], (x0, y0, x1-x0, y1-y0), 1)
+    pygame.draw.rect(settings.display, palette[col], (x0, y0, x1-x0, y1-y0), 1)
 
 # Draw a filled rect shape
 def rectfill(x0, y0, x1, y1, col):
-    global display
-    pygame.draw.rect(display, palette[col], (x0, y0, x1-x0, y1-y0))
+    pygame.draw.rect(settings.display, palette[col], (x0, y0, x1-x0, y1-y0))
 
 # Remove an element from a given list
 def rem(t:list, v):
@@ -262,27 +257,27 @@ def rem(t:list, v):
 
 # Play a sound effect
 def sfx(c):
-    if c >= len(sounds):
+    if c >= len(settings.sounds):
         print('Sfx index out of bound !')
         return
-    sounds[c].play()
-    sounds[c].set_volume(1)
+    settings.sounds[c].play()
+    settings.sounds[c].set_volume(1)
 
 # Draw a sprite sliced from the spritesheet
 def spr(s, x=0, y=0, w=8, h=8, flip_x=False, flip_y=False):
     if(s==0):
         return
     sprite  = pygame.Surface((w,h))
-    sprite.blit(spritesheet, (0, 0), (s%16*8, math.floor(s/16)*8, w, h))
+    sprite.blit(settings.spritesheet, (0, 0), (s%16*8, math.floor(s/16)*8, w, h))
     sprite.set_colorkey((0,0,0))
     if flip_x or flip_y:
         sprite = pygame.transform.flip(sprite, flip_x, flip_y)
-    display.blit(sprite, (x,y))
+    settings.display.blit(sprite, (x,y))
 
 # Save all flags to a binary file
 def save_flags():
     f = open("flags.bin","wb")
-    data = bytearray(flags)
+    data = bytearray(settings.flags)
     f.write(data)
     f.close()
 
@@ -398,7 +393,7 @@ def text(t, x=0, y=0, color = 7):
         else:(i, j) = (24, 3)
         
         # Cut the char bitmap
-        sprite.blit(font_sheet, (0, 0), (i*font_width, j*font_height, font_width, font_height))
+        sprite.blit(settings.fontsheet, (0, 0), (i*font_width, j*font_height, font_width, font_height))
         sprite.set_colorkey((0,0,0))
 
         # Tint the bitmap
@@ -407,51 +402,9 @@ def text(t, x=0, y=0, color = 7):
         sprite.blit(mask, (0, 0), special_flags = pygame.BLEND_RGB_MULT)
         
         # Print the text
-        display.blit(sprite, (x, y))
+        settings.display.blit(sprite, (x, y))
         x+=sprite.get_width()
 
 # Get ellapsed time since the game has started (since pygame.init())
 def time():
     return pygame.time.get_ticks()/1000
-
-### Entry point ###
-
-# cd to parent dir
-os.chdir(os.path.dirname(os.path.abspath(__file__)))
-
-# Initialize some stuff
-pygame.mixer.pre_init(44100, -16, 1, 1024)
-pygame.init()
-os.environ['SDL_VIDEO_CENTERED'] = '1'
-
-# Framework variables
-RESOLUTION = (128, 128)
-MULTIPLIER = 10
-window = pygame.display.set_mode((RESOLUTION[0]*MULTIPLIER, RESOLUTION[1]*MULTIPLIER))
-display = pygame.Surface(RESOLUTION)
-clock = pygame.time.Clock()
-pygame.display.set_caption("PyCO-8")
-pygame.display.set_icon(pygame.image.load("./icon.png"))
-spritesheet = pygame.image.load("./spritesheet.gif")
-map_data = load_map()
-font_sheet = pygame.image.load("./font.gif")
-gamepad = Gamepad() # Creates a gamepad
-sounds = load_sounds() # Sound effects 
-flags = load_flags() # Sprite flags data
-
-# Core window loop
-cls()
-main._init()
-while True:
-    main._update()
-    display = pygame.Surface(RESOLUTION)
-    main._draw()
-    display = pygame.transform.scale(display, (RESOLUTION[0]*MULTIPLIER, RESOLUTION[1]*MULTIPLIER))
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            pygame.display.quit()
-            sys.exit()
-        manage_input(event)
-    window.blit(display, (0, 0))
-    pygame.display.update()
-    clock.tick(60)
